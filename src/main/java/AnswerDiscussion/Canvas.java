@@ -110,8 +110,10 @@ public class Canvas {
 
   //Extract text from a PDF file
   public String extractTextFromPdf(String filePath) throws IOException {
-    try (PDDocument document = PDDocument.load(new File(filePath))) {
+    File file = new File(filePath);
+    try (PDDocument document = PDDocument.load(file)) {
       PDFTextStripper pdfStripper = new PDFTextStripper();
+      file.delete();
       return pdfStripper.getText(document); // Return extracted text as a string
     }
   }
