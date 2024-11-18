@@ -6,19 +6,15 @@ import java.net.URI;
 import java.net.http.*;
 
 public class ChatGpt {
-
   static HttpClient client = HttpClient.newHttpClient();
-  static String chatAPIKey = "Yours goes here";
+  static String chatAPIKey = System.getenv("CHATGPT_API_KEY");
   String prompt;
-  JSONObject file;
 
-  ChatGpt(String prompt, JSONObject file) {
+  ChatGpt(String prompt) {
     this.prompt = prompt;
-    this.file = file;
   }
 
-
-
+  //makes the body of the request
   HttpRequest.BodyPublisher makeBody() {
     JSONObject body = new JSONObject()
       .put("model", "gpt-4o-mini")
@@ -33,7 +29,7 @@ public class ChatGpt {
     return HttpRequest.BodyPublishers.ofString(body.toString());
   }
 
-
+  //makes a post request
   public HttpRequest makeRequest() {
     return HttpRequest.newBuilder(URI.create("https://api.openai.com/v1/chat/completions"))
       .method("POST", makeBody())
@@ -42,14 +38,23 @@ public class ChatGpt {
       .build();
   }
 
+  //Extracts chat-gpt's response to this prompt
+  String getResponse(JSONObject response) {
+    JSONArray choices = new JSONArray(response.get("choices").toString());
+    JSONObject choice = new JSONObject(choices.getJSONObject(0).toString());
+    JSONObject message = new JSONObject(choice.get("message").toString());
+    return message.get("content").toString();
+
+  }
+
+  //Asks chatgpt to answer this prompt
   public String askChat() {
     HttpRequest request = makeRequest();
-
-    client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-      .thenApply(HttpResponse::body)
-      .thenAccept(System.out::println)
-      .join();
-
-    return "";
+    try {
+      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      return getResponse(new JSONObject(response.body()));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 }
